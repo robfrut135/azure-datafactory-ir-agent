@@ -125,43 +125,10 @@ function Register-Gateway([string] $instanceKey)
 {
     Trace-Log "Register Agent"
 	$filePath = "C:\Program Files\Microsoft Integration Runtime\4.0\Shared\dmgcmd.exe"
-	Run-Process $filePath "-RegisterNewNode $instanceKey $env:COMPUTERNAME -EnableRemoteAccess 8060 -TurnOffAutoUpdate"
+    Run-Process $filePath "-Restart"
+    Run-Process $filePath "-EnableRemoteAccess 8060"
+	Run-Process $filePath "-RegisterNewNode $instanceKey $env:COMPUTERNAME"
     Trace-Log "Agent registration is successful!"
-}
-
-function Check-WhetherGatewayInstalled([string]$name)
-{
-    $installedSoftwares = Get-ChildItem "hklm:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
-    foreach ($installedSoftware in $installedSoftwares)
-    {
-        $displayName = $installedSoftware.GetValue("DisplayName")
-        if($DisplayName -eq "$name Preview" -or  $DisplayName -eq "$name")
-        {
-            return $true
-        }
-    }
-    return $false
-}
-
-function UnInstall-Gateway()
-{
-    $installed = $false
-    if (Check-WhetherGatewayInstalled("Microsoft Integration Runtime"))
-    {
-        [void](Get-WmiObject -Class Win32_Product -Filter "Name='Microsoft Integration Runtime Preview' or Name='Microsoft Integration Runtime'" -ComputerName $env:COMPUTERNAME).Uninstall()
-        $installed = $true
-    }
-    if (Check-WhetherGatewayInstalled("Microsoft Integration Runtime"))
-    {
-        [void](Get-WmiObject -Class Win32_Product -Filter "Name='Microsoft Integration Runtime Preview' or Name='Microsoft Integration Runtime'" -ComputerName $env:COMPUTERNAME).Uninstall()
-        $installed = $true
-    }
-    if ($installed -eq $false)
-    {
-        Trace-Log "Microsoft Integration Runtime Preview is not installed."
-        return
-    }
-    Trace-Log "Microsoft Integration Runtime has been uninstalled from this machine."
 }
 
 Trace-Log "Log file: $logLoc"
@@ -170,10 +137,6 @@ Trace-Log "Gateway download fw link: $uri"
 $gwPath= "$PWD\gateway.msi"
 Trace-Log "Gateway download location: $gwPath"
 
-
 Download-Gateway $uri $gwPath
-
-UnInstall-Gateway
 Install-Gateway $gwPath
-
 Register-Gateway $gatewayKey
