@@ -59,13 +59,11 @@ function Run-Process([string] $process, [string] $arguments)
 
 	if ([string]::IsNullOrEmpty($arguments))
 	{
-		$proc = Start-Process -FilePath $process -Wait -Passthru -NoNewWindow `
-			-RedirectStandardError $errorFile -RedirectStandardOutput $outFile -ErrorVariable errVariable
+		$proc = Start-Process -FilePath $process -Wait -Passthru -NoNewWindow -RedirectStandardError $errorFile -RedirectStandardOutput $outFile -ErrorVariable errVariable
 	}
 	else
 	{
-		$proc = Start-Process -FilePath $process -ArgumentList $arguments -Wait -Passthru -NoNewWindow `
-			-RedirectStandardError $errorFile -RedirectStandardOutput $outFile -ErrorVariable errVariable
+		$proc = Start-Process -FilePath $process -ArgumentList $arguments -Wait -Passthru -NoNewWindow -RedirectStandardError $errorFile -RedirectStandardOutput $outFile -ErrorVariable errVariable
 	}
 
 	$errContent = [string] (Get-Content -Path $errorFile -Delimiter "!!!DoesNotExist!!!")
@@ -112,7 +110,6 @@ function Install-Gateway([string] $gwPath)
     {
 		Throw-Error "Gateway path is not specified"
     }
-
 	if (!(Test-Path -Path $gwPath))
 	{
 		Throw-Error "Invalid gateway path: $gwPath"
@@ -120,48 +117,15 @@ function Install-Gateway([string] $gwPath)
 
 	Trace-Log "Start Gateway installation"
 	Run-Process "msiexec.exe" "/i gateway.msi INSTALLTYPE=AzureTemplate /quiet /norestart"
-
 	Start-Sleep -Seconds 30
-
 	Trace-Log "Installation of gateway is successful"
-}
-
-function Get-RegistryProperty([string] $keyPath, [string] $property)
-{
-	Trace-Log "Get-RegistryProperty: Get $property from $keyPath"
-	if (! (Test-Path $keyPath))
-	{
-		Trace-Log "Get-RegistryProperty: $keyPath does not exist"
-	}
-
-	$keyReg = Get-Item $keyPath
-	if (! ($keyReg.Property -contains $property))
-	{
-		Trace-Log "Get-RegistryProperty: $property does not exist"
-		return ""
-	}
-
-	return $keyReg.GetValue($property)
-}
-
-function Get-InstalledFilePath()
-{
-	$filePath = Get-RegistryProperty "hklm:\Software\Microsoft\DataTransfer\DataManagementGateway\ConfigurationManager" "DiacmdPath"
-	if ([string]::IsNullOrEmpty($filePath))
-	{
-		Throw-Error "Get-InstalledFilePath: Cannot find installed File Path"
-	}
-    Trace-Log "Gateway installation file: $filePath"
-
-	return $filePath
 }
 
 function Register-Gateway([string] $instanceKey)
 {
     Trace-Log "Register Agent"
-	$filePath = Get-InstalledFilePath
-	Run-Process $filePath "-era 8060"
-	Run-Process $filePath "-k $instanceKey"
+	$filePath = "C:\Program Files\Microsoft Integration Runtime\4.0\Shared\dmgcmd.exe"
+	Run-Process $filePath "-RegisterNewNode $instanceKey $env:COMPUTERNAME -EnableRemoteAccess 8060 -TurnOffAutoUpdate"
     Trace-Log "Agent registration is successful!"
 }
 
@@ -187,19 +151,16 @@ function UnInstall-Gateway()
         [void](Get-WmiObject -Class Win32_Product -Filter "Name='Microsoft Integration Runtime Preview' or Name='Microsoft Integration Runtime'" -ComputerName $env:COMPUTERNAME).Uninstall()
         $installed = $true
     }
-
     if (Check-WhetherGatewayInstalled("Microsoft Integration Runtime"))
     {
         [void](Get-WmiObject -Class Win32_Product -Filter "Name='Microsoft Integration Runtime Preview' or Name='Microsoft Integration Runtime'" -ComputerName $env:COMPUTERNAME).Uninstall()
         $installed = $true
     }
-
     if ($installed -eq $false)
     {
         Trace-Log "Microsoft Integration Runtime Preview is not installed."
         return
     }
-
     Trace-Log "Microsoft Integration Runtime has been uninstalled from this machine."
 }
 
