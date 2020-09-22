@@ -124,10 +124,11 @@ function Install-Gateway([string] $gwPath)
 function Register-Gateway([string] $instanceKey)
 {
     Trace-Log "Register Agent"
+	$currentDate =  Get-Date -Format "yyMMddHHmmss"
 	$filePath = "C:\Program Files\Microsoft Integration Runtime\4.0\Shared\dmgcmd.exe"
     Run-Process $filePath "-Restart"
     Run-Process $filePath "-EnableRemoteAccess 8060"
-	Run-Process $filePath "-RegisterNewNode $instanceKey $env:COMPUTERNAME"
+	Run-Process $filePath "-RegisterNewNode $instanceKey hip$currentDate"
     Trace-Log "Agent registration is successful!"
 }
 
